@@ -20,3 +20,16 @@ You can check which docker containers are running with:
 ```
 docker ps -a
 ```
+
+```
+docker compose down
+docker compose build sdn_controller
+docker compose up -d
+
+docker logs sdn_controller
+```
+
+You can view the created network topollogy with:
+```
+http://localhost:8000/sdn_controller/graph
+```

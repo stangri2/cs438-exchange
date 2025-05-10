@@ -28,6 +28,7 @@ services:
       - "8000:8000"  # Expose the FastAPI port
     volumes:
       - ./shared:/shared  # Mount the same shared directory
+      - ./docker-compose.yml:/app/docker-compose.yml  # Mount docker-compose.yml directly into container
     depends_on:
       - router1
       - router2

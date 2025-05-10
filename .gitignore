@@ -38,3 +38,5 @@
 **/.venvs/
 # Build directory
 build/
+
+.vscode/
