@@ -15,8 +15,11 @@ using Command = std::variant<CmdNew, CmdModify, CmdCancel>;
 struct EvAckNew     { OrderId id; };
 struct EvAckModify  { OrderId id; };
 struct EvAckCancel  { OrderId id; };
-struct EvReject     { OrderId id; std::string reason; };
+struct EvReject     { OrderId id; }; //std::string reason; };
 struct EvTrade      { Trade t; };   // full trade struct from OrderBook
+
+static_assert(sizeof(EvReject) == sizeof(OrderId),
+              "Wrong EvReject picked up");
 
 using Event = std::variant<EvAckNew, EvAckModify, EvAckCancel, EvTrade, EvReject>;
 

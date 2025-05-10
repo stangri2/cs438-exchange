@@ -1,5 +1,7 @@
 #include "MatchingEngine.hpp"
 
+#include <chrono>
+
 namespace ex {
 
 std::queue<Event> MatchingEngine::handle(const Command& cmd) {
@@ -25,14 +27,18 @@ std::queue<Event> MatchingEngine::handle(const Command& cmd) {
         } else if constexpr (std::is_same_v<T, CmdModify>) {
             if (ob_.modify(c.id, c.newQty))
                 out.push(EvAckModify{ c.id });
-            else
-                out.push(EvReject{ c.id, "unknown-order" });
+            else {
+                auto rejectEvent = EvReject{c.id}; 
+                out.push(rejectEvent);
+            }
 
         } else if constexpr (std::is_same_v<T, CmdCancel>) {
             if (ob_.cancel(c.id))
                 out.push(EvAckCancel{ c.id });
-            else
-                out.push(EvReject{ c.id, "unknown-order" });
+            else {
+                auto rejectEvent = EvReject{c.id}; 
+                out.push(rejectEvent);
+            }
         }
     }, cmd);
 
