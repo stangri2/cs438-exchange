@@ -1,0 +1,49 @@
+{
+	"router_id": "routerA",
+	"flow_table": [
+		{
+			"id": 1,
+			"priority": 100,
+			"match": {
+				"ipv4_dst": "192.168.20.0/24"
+		},
+		"actions": [{
+				"type": "forward",
+				"interface": "eth1",
+				"next_hop": "192.168.12.3"
+			}]
+		},
+		{
+			"id": 2,
+			"priority": 90,
+			"match": {
+				"ipv4_dst": "10.0.3.0/24"
+		},
+		"actions": [{
+				"type": "forward",
+				"interface": "eth2",
+				"next_hop": "192.168.13.3"
+			}]
+		},
+		{
+			"id": 3,
+			"priority": 1,
+			"match": {},
+			"actions": [
+				{
+					"type": "controller"
+				}
+			]
+		}
+	],
+	"interfaces": {
+		"eth0": {
+		"ip": "192.168.12.2/24",
+		"connected_to": "routerB"
+		},
+		"eth1": {
+		"ip": "192.168.13.2/24",
+		"connected_to": "routerC"
+		}
+	}
+}
