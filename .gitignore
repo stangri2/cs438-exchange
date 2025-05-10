@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Virtual environments
+.venv/
+.venvs/
+**/.venv/
+**/.venvs/
