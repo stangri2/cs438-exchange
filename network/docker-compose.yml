@@ -6,8 +6,32 @@ networks:
       config:
         - subnet: 192.168.12.0/24 # subnet reprensenting the internal link between router 1 and 2, emulated physical ethernet link
           gateway: 192.168.12.1
+  # Properly defining the management network
+  management:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/24
+          gateway: 10.0.0.1
 
 services:
+  # Adding the SDN controller service
+  sdn_controller:
+    build:
+      context: ./sdn_controller
+      dockerfile: Dockerfile
+    container_name: sdn_controller
+    networks:
+      management:
+        ipv4_address: 10.0.0.2
+    ports:
+      - "8000:8000"  # Expose the FastAPI port
+    volumes:
+      - ./shared:/shared  # Mount the same shared directory
+    depends_on:
+      - router1
+      - router2
+  
   router1:
     image: ubuntu:20.04
     container_name: router1

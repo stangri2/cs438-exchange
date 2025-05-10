@@ -10,16 +10,19 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SDN Controller API")
 
-# Configuration
-ROUTER_TABLES_DIR = "/shared/routerA_table.json"  # Directory for router tables (shared volume)
+ROUTER_TABLES_DIR = "/shared/"
 
-# Ensure the directory exists
-os.makedirs(ROUTER_TABLES_DIR, exist_ok=True)
+@app.get("/sdn_controller/health")
+def service_health():
+    return {
+        "status": "running", 
+        "service": "SDN Controller"
+    }
 
-def get_router_table(router_id: str) -> Dict:
-    """Read a router's flow table from the shared volume."""
+@app.get("/sdn_controller/routers/flow_table/{router_id}")
+def get_flow_table(router_id: str):
+    # first read the shared folder to access the file
     file_path = os.path.join(ROUTER_TABLES_DIR, f"{router_id}_table.json")
-    
     try:
         with open(file_path, "r") as file:
             return json.load(file)
@@ -30,22 +33,14 @@ def get_router_table(router_id: str) -> Dict:
             "flow_table": [],
             "interfaces": {}
         }
-    except json.JSONDecodeError:
-        logger.error(f"Invalid JSON in table for router {router_id}")
-        raise HTTPException(status_code=500, detail=f"Invalid JSON in router table for {router_id}")
+    # except json.JSONDecodeError:
+    #     logger.error(f"Invalid JSON in table for router {router_id}")
+    #     raise HTTPException(status_code=500, detail=f"Invalid JSON in router table for {router_id}")
 
-def save_router_table(router_id: str, table: Dict) -> None:
-    """Save a router's flow table to the shared volume."""
-    file_path = os.path.join(ROUTER_TABLES_DIR, f"{router_id}_table.json")
-    
-    with open(file_path, "w") as file:
-        json.dump(table, file, indent=2)
-    
-    logger.info(f"Saved table for router {router_id}")
-
-@app.get("/")
-def read_root():
-    return {"status": "running", "service": "SDN Controller"}
+    return {
+        "router_id": router_id,
+        "flow_table": table.get("flow_table", [])
+    }
 
 @app.get("/routers")
 def list_routers():
