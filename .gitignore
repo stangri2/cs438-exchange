@@ -36,3 +36,5 @@
 .venvs/
 **/.venv/
 **/.venvs/
+# Build directory
+build/
