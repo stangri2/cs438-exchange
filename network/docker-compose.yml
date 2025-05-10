@@ -1,0 +1,56 @@
+version: '3'
+
+networks:
+  router-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
+          gateway: 172.18.0.1
+
+services:
+  router1:
+    image: ubuntu:20.04
+    container_name: router1
+    networks:
+      router-net:
+        ipv4_address: 172.18.0.2
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./shared:/shared
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+    command: >
+      bash -c "
+        apt-get update && 
+        apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools && 
+        tail -f /dev/null
+      "
+
+  router2:
+    image: ubuntu:20.04
+    container_name: router2
+    networks:
+      router-net:
+        ipv4_address: 172.18.0.3
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./shared:/shared
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+    command: >
+      bash -c "
+        apt-get update && 
+        apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools && 
+        tail -f /dev/null
+      "
