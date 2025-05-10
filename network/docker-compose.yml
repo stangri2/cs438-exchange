@@ -1,28 +1,11 @@
-version: '3'
-# Networks: 
-# - 10.1.12.0/24 (link-1-2): Point-to-point link between router1 and router2
-# - 10.1.13.0/24 (link-1-3): Point-to-point link between router1 and router3
-# - 10.1.23.0/24 (link-2-3): Point-to-point link between router2 and router3
-
 networks:
-  # Point-to-point links between routers replaces the physical connections in actual hardware
+  # This is like the physical cable links between the routers, so the idea is that now we have a subnet link for each pair of routers
   link-1-2:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.1.12.0/24
-  
-  link-1-3:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.1.13.0/24
-  
-  link-2-3:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.1.23.0/24
+        - subnet: 192.168.12.0/24 # subnet reprensenting the internal link between router 1 and 2, emulated physical ethernet link
+          gateway: 192.168.12.1
 
 services:
   router1:
@@ -30,15 +13,13 @@ services:
     container_name: router1
     networks:
       link-1-2:
-        ipv4_address: 10.1.12.1
-      link-1-3:
-        ipv4_address: 10.1.13.1
+        ipv4_address: 192.168.12.2
     cap_add:
       - NET_ADMIN
     sysctls:
       - net.ipv4.ip_forward=1
     ports:
-      - "9001:8000"
+      - "8001:8000"
     volumes:
       - ./shared:/shared
     environment:
@@ -47,27 +28,21 @@ services:
       bash -c "
         apt-get update && 
         apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools &&
-        ip route add 10.1.12.0/24 dev eth0 &&
-        ip route add 10.1.13.0/24 dev eth1 &&
-        ip route add 10.1.23.0/24 via 10.1.12.2 &&
         echo 'Router 1 configuration complete' &&
         tail -f /dev/null
       "
-  
   router2:
     image: ubuntu:20.04
     container_name: router2
     networks:
       link-1-2:
-        ipv4_address: 10.1.12.2
-      link-2-3:
-        ipv4_address: 10.1.23.1
+        ipv4_address: 192.168.12.3
     cap_add:
       - NET_ADMIN
     sysctls:
       - net.ipv4.ip_forward=1
     ports:
-      - "9002:8000"
+      - "8002:8000"
     volumes:
       - ./shared:/shared
     environment:
@@ -76,38 +51,6 @@ services:
       bash -c "
         apt-get update && 
         apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools &&
-        ip route add 10.1.12.0/24 dev eth0 &&
-        ip route add 10.1.23.0/24 dev eth1 &&
-        ip route add 10.1.13.0/24 via 10.1.12.1 &&
         echo 'Router 2 configuration complete' &&
-        tail -f /dev/null
-      "
-
-  router3:
-    image: ubuntu:20.04
-    container_name: router3
-    networks:
-      link-1-3:
-        ipv4_address: 10.1.13.3
-      link-2-3:
-        ipv4_address: 10.1.23.2
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      - net.ipv4.ip_forward=1
-    ports:
-      - "9003:8000"
-    volumes:
-      - ./shared:/shared
-    environment:
-      - DEBIAN_FRONTEND=noninteractive
-    command: >
-      bash -c "
-        apt-get update && 
-        apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools &&
-        ip route add 10.1.13.0/24 dev eth0 &&
-        ip route add 10.1.23.0/24 dev eth1 &&
-        ip route add 10.1.12.0/24 via 10.1.13.1 &&
-        echo 'Router 3 configuration complete' &&
         tail -f /dev/null
       "
