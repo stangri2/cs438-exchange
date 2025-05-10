@@ -1,42 +1,46 @@
-#ifndef ORDERBOOK_ORDERBOOK_HPP_
-#define ORDERBOOK_ORDERBOOK_HPP_
-
+#pragma once
 #include <cstdint>
-#include <functional>
 #include <list>
 #include <map>
 #include <unordered_map>
-#include <type_traits>
+#include <vector>
 
-namespace OrderBook {
+namespace ex {
+
+using OrderId = std::uint64_t;
+using ClientId = std::uint32_t;
+using Price    = std::int64_t;
+using Qty      = std::uint32_t;
+
+enum class Side : std::uint8_t { BID, ASK };
+
+struct Order { OrderId id; ClientId owner; Price price; Qty qty; Side side; long timestamp;};
+struct Trade { OrderId maker, taker; ClientId makerOwner, takerOwner;
+               Price price; Qty qty; };
 
 class OrderBook {
- private:
-  enum class Side { BID, ASK };
+public:
+    bool add   (const Order&, std::vector<Trade>&);
+    bool modify(OrderId, Qty);
+    bool cancel(OrderId);
+    Price bestBid () const;
+    Price bestAsk () const;
 
-  using OrderId = uint64_t;
-  using Volume = uint64_t;
-  using Price = uint64_t;
+private:
+    using Queue  = std::list<Order>;
+    using BidMap = std::map<Price, Queue, std::greater<>>;
+    using AskMap = std::map<Price, Queue, std::less<>>;
 
-  struct Order {
-    OrderId orderId;
-    Price price;
-    Volume volume;
-    Side side;
-  };
+    BidMap bids_;
+    AskMap asks_;
+    std::unordered_map<OrderId, Queue::iterator> id2it_;
 
-  std::map<Price, std::list<Order>> bids_;
-  std::map<Price, std::list<Order>> asks_;
-  std::unordered_map<OrderId, std::list<Order>::iterator> orderMap_;
-
- public:
-  // TODO: Will need to figure out how the orderIds will be generated
-  bool addOrder(OrderId orderId, Side side, Price price, Volume volume);
-
-  bool modifyOrder(OrderId orderId, Volume newVolume);
-
-  bool deleteOrder(OrderId orderId);
+    template<Side S, class Opp, class Own>
+    void matchAgainst(Order& in, Opp& oppTree, Own& ownTree,
+                      std::vector<Trade>& out);
+    template<Side s>
+    bool cancelHelper(OrderId);
 };
-}  // namespace OrderBook
 
-#endif
+} // namespace ex
+
