@@ -1,69 +1,44 @@
 version: '3'
-# 172.17.0.0/16, 10.0.12.0/24(network_link1-2), 172.18.0.0/16(network_router-net), 192.168.1.0/24(sub_net_cs438)
 # Networks: 
-# - 172.18.0.0/16 (mgmt-net): Management network for controller access
-# - 10.0.12.0/24 (link-1-2): Point-to-point link between router1 and router2
-# - 10.0.13.0/24 (link-1-3): Point-to-point link between router1 and router3
-# - 10.0.23.0/24 (link-2-3): Point-to-point link between router2 and router3
-# - 10.0.24.0/24 (link-2-4): Point-to-point link between router2 and router4
-# - 10.0.34.0/24 (link-3-4): Point-to-point link between router3 and router4
+# - 10.1.12.0/24 (link-1-2): Point-to-point link between router1 and router2
+# - 10.1.13.0/24 (link-1-3): Point-to-point link between router1 and router3
+# - 10.1.23.0/24 (link-2-3): Point-to-point link between router2 and router3
+
 networks:
-  # management network so that the controller can access the routers
-  mgmt-net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.18.0.0/16
-          gateway: 172.18.0.1
-  
-  # Point-to-point link between routers replaces the physical connections in actual hardware
+  # Point-to-point links between routers replaces the physical connections in actual hardware
   link-1-2:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.12.0/24
+        - subnet: 10.1.12.0/24
   
   link-1-3:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.13.0/24
+        - subnet: 10.1.13.0/24
   
   link-2-3:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.23.0/24
-  
-  link-2-4:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.0.24.0/24
-  
-  link-3-4:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 10.0.34.0/24
+        - subnet: 10.1.23.0/24
 
 services:
   router1:
     image: ubuntu:20.04
     container_name: router1
     networks:
-      mgmt-net:
-        ipv4_address: 172.18.0.2
       link-1-2:
-        ipv4_address: 10.0.12.1
+        ipv4_address: 10.1.12.1
       link-1-3:
-        ipv4_address: 10.0.13.1
+        ipv4_address: 10.1.13.1
     cap_add:
       - NET_ADMIN
     sysctls:
       - net.ipv4.ip_forward=1
     ports:
-      - "8001:8000"
+      - "9001:8000"
     volumes:
       - ./shared:/shared
     environment:
@@ -72,11 +47,9 @@ services:
       bash -c "
         apt-get update && 
         apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools &&
-        ip route add 10.0.12.0/24 dev eth1 &&
-        ip route add 10.0.13.0/24 dev eth2 &&
-        ip route add 10.0.23.0/24 via 10.0.12.2 &&
-        ip route add 10.0.24.0/24 via 10.0.12.2 &&
-        ip route add 10.0.34.0/24 via 10.0.13.3 &&
+        ip route add 10.1.12.0/24 dev eth0 &&
+        ip route add 10.1.13.0/24 dev eth1 &&
+        ip route add 10.1.23.0/24 via 10.1.12.2 &&
         echo 'Router 1 configuration complete' &&
         tail -f /dev/null
       "
@@ -85,20 +58,16 @@ services:
     image: ubuntu:20.04
     container_name: router2
     networks:
-      mgmt-net:
-        ipv4_address: 172.18.0.3
       link-1-2:
-        ipv4_address: 10.0.12.2
+        ipv4_address: 10.1.12.2
       link-2-3:
-        ipv4_address: 10.0.23.1
-      link-2-4:
-        ipv4_address: 10.0.24.1
+        ipv4_address: 10.1.23.1
     cap_add:
       - NET_ADMIN
     sysctls:
       - net.ipv4.ip_forward=1
     ports:
-      - "8002:8000"
+      - "9002:8000"
     volumes:
       - ./shared:/shared
     environment:
@@ -107,11 +76,9 @@ services:
       bash -c "
         apt-get update && 
         apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools &&
-        ip route add 10.0.12.0/24 dev eth1 &&
-        ip route add 10.0.23.0/24 dev eth2 &&
-        ip route add 10.0.24.0/24 dev eth3 &&
-        ip route add 10.0.13.0/24 via 10.0.12.1 &&
-        ip route add 10.0.34.0/24 via 10.0.23.2 &&
+        ip route add 10.1.12.0/24 dev eth0 &&
+        ip route add 10.1.23.0/24 dev eth1 &&
+        ip route add 10.1.13.0/24 via 10.1.12.1 &&
         echo 'Router 2 configuration complete' &&
         tail -f /dev/null
       "
@@ -120,20 +87,16 @@ services:
     image: ubuntu:20.04
     container_name: router3
     networks:
-      mgmt-net:
-        ipv4_address: 172.18.0.4
       link-1-3:
-        ipv4_address: 10.0.13.3
+        ipv4_address: 10.1.13.3
       link-2-3:
-        ipv4_address: 10.0.23.2
-      link-3-4:
-        ipv4_address: 10.0.34.1
+        ipv4_address: 10.1.23.2
     cap_add:
       - NET_ADMIN
     sysctls:
       - net.ipv4.ip_forward=1
     ports:
-      - "8003:8000"
+      - "9003:8000"
     volumes:
       - ./shared:/shared
     environment:
@@ -142,44 +105,9 @@ services:
       bash -c "
         apt-get update && 
         apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools &&
-        ip route add 10.0.13.0/24 dev eth1 &&
-        ip route add 10.0.23.0/24 dev eth2 &&
-        ip route add 10.0.34.0/24 dev eth3 &&
-        ip route add 10.0.12.0/24 via 10.0.13.1 &&
-        ip route add 10.0.24.0/24 via 10.0.23.1 &&
+        ip route add 10.1.13.0/24 dev eth0 &&
+        ip route add 10.1.23.0/24 dev eth1 &&
+        ip route add 10.1.12.0/24 via 10.1.13.1 &&
         echo 'Router 3 configuration complete' &&
-        tail -f /dev/null
-      "
-
-  router4:
-    image: ubuntu:20.04
-    container_name: router4
-    networks:
-      mgmt-net:
-        ipv4_address: 172.18.0.5
-      link-2-4:
-        ipv4_address: 10.0.24.2
-      link-3-4:
-        ipv4_address: 10.0.34.2
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      - net.ipv4.ip_forward=1
-    ports:
-      - "8004:8000"
-    volumes:
-      - ./shared:/shared
-    environment:
-      - DEBIAN_FRONTEND=noninteractive
-    command: >
-      bash -c "
-        apt-get update && 
-        apt-get install -y --no-install-recommends python3 iproute2 iputils-ping net-tools &&
-        ip route add 10.0.24.0/24 dev eth1 &&
-        ip route add 10.0.34.0/24 dev eth2 &&
-        ip route add 10.0.12.0/24 via 10.0.24.1 &&
-        ip route add 10.0.13.0/24 via 10.0.34.1 &&
-        ip route add 10.0.23.0/24 via 10.0.24.1 &&
-        echo 'Router 4 configuration complete' &&
         tail -f /dev/null
       "
