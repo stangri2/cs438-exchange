@@ -30,36 +30,36 @@
         "router1",
         "router2"
       ],
-      "metric": 425.0
+      "metric": 263.0
     },
     {
       "match": {
         "destination": "router3"
       },
       "action": {
-        "forward_to": "router3"
+        "forward_to": "router4"
       },
       "priority": 100,
       "path": [
         "router1",
+        "router4",
         "router3"
       ],
-      "metric": 336.0
+      "metric": 687.0
     },
     {
       "match": {
         "destination": "router4"
       },
       "action": {
-        "forward_to": "router3"
+        "forward_to": "router4"
       },
       "priority": 100,
       "path": [
         "router1",
-        "router3",
         "router4"
       ],
-      "metric": 773.0
+      "metric": 471.0
     },
     {
       "match": {
@@ -74,7 +74,7 @@
         "router2",
         "router5"
       ],
-      "metric": 1074.0
+      "metric": 752.0
     },
     {
       "match": {
@@ -89,23 +89,22 @@
         "router2",
         "router7"
       ],
-      "metric": 1202.0
+      "metric": 1248.0
     },
     {
       "match": {
         "destination": "router6"
       },
       "action": {
-        "forward_to": "router3"
+        "forward_to": "router4"
       },
       "priority": 100,
       "path": [
         "router1",
-        "router3",
         "router4",
         "router6"
       ],
-      "metric": 1362.0
+      "metric": 1132.0
     },
     {
       "match": {
@@ -121,24 +120,23 @@
         "router7",
         "router8"
       ],
-      "metric": 1431.0
+      "metric": 1255.0
     },
     {
       "match": {
         "destination": "router9"
       },
       "action": {
-        "forward_to": "router2"
+        "forward_to": "router4"
       },
       "priority": 100,
       "path": [
         "router1",
-        "router2",
-        "router7",
-        "router8",
+        "router4",
+        "router6",
         "router9"
       ],
-      "metric": 1474.0
+      "metric": 1404.0
     },
     {
       "match": {
@@ -153,10 +151,9 @@
         "router2",
         "router7",
         "router8",
-        "router9",
         "router10"
       ],
-      "metric": 1657.0
+      "metric": 2011.0
     }
   ],
   "routes": [

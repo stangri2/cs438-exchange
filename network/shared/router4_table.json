@@ -28,15 +28,14 @@
         "destination": "router1"
       },
       "action": {
-        "forward_to": "router3"
+        "forward_to": "router1"
       },
       "priority": 100,
       "path": [
         "router4",
-        "router3",
         "router1"
       ],
-      "metric": 773.0
+      "metric": 471.0
     },
     {
       "match": {
@@ -50,7 +49,7 @@
         "router4",
         "router3"
       ],
-      "metric": 437.0
+      "metric": 216.0
     },
     {
       "match": {
@@ -64,7 +63,7 @@
         "router4",
         "router5"
       ],
-      "metric": 305.0
+      "metric": 299.0
     },
     {
       "match": {
@@ -78,22 +77,22 @@
         "router4",
         "router6"
       ],
-      "metric": 589.0
+      "metric": 661.0
     },
     {
       "match": {
         "destination": "router2"
       },
       "action": {
-        "forward_to": "router5"
+        "forward_to": "router1"
       },
       "priority": 100,
       "path": [
         "router4",
-        "router5",
+        "router1",
         "router2"
       ],
-      "metric": 954.0
+      "metric": 734.0
     },
     {
       "match": {
@@ -106,11 +105,10 @@
       "path": [
         "router4",
         "router6",
-        "router9",
         "router8",
         "router7"
       ],
-      "metric": 1068.0
+      "metric": 909.0
     },
     {
       "match": {
@@ -123,10 +121,9 @@
       "path": [
         "router4",
         "router6",
-        "router9",
         "router8"
       ],
-      "metric": 839.0
+      "metric": 902.0
     },
     {
       "match": {
@@ -141,7 +138,7 @@
         "router6",
         "router9"
       ],
-      "metric": 796.0
+      "metric": 933.0
     },
     {
       "match": {
@@ -157,7 +154,7 @@
         "router9",
         "router10"
       ],
-      "metric": 979.0
+      "metric": 1595.0
     }
   ],
   "routes": [

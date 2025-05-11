@@ -34,3 +34,9 @@ You can view the created network topollogy with:
 ```
 http://localhost:8000/sdn_controller/graph
 ```
+
+You can generate a video of the network paths throughout time with:
+```
+cd /cs438-exchange/network
+ffmpeg -framerate 5 -pattern_type glob -i 'shared/snapshots/network_graph_*.png' -c:v libx264 -pix_fmt yuv420p network_evolution.mp4
+```

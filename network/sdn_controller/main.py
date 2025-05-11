@@ -12,6 +12,9 @@ import io
 import base64
 from fastapi.responses import HTMLResponse
 from fastapi.responses import Response
+import time
+import threading
+from datetime import datetime
 
 # Setuplogging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +27,12 @@ DOCKER_COMPOSE_PATH= "/app/docker-compose.yml"
 
 # Global network graph
 network_graph = nx.Graph()
+
+# Store node positions to keep graph layout consistent
+node_positions = {}
+
+# Directory to save graph snapshots
+GRAPH_SNAPSHOTS_DIR = "/shared/snapshots/"
 
 def parse_docker_compose():
     """Parse docker-compose.yml to build network topology graph"""
@@ -368,6 +377,124 @@ def network_graph_image():
         # Return error message as plain text
         return Response(content=f"Error generating graph: {str(e)}", media_type="text/plain")
 
+def generate_graph_snapshots():
+    """Thread function to generate graph snapshots every 4 seconds"""
+    # Ensure snapshots directory exists
+    os.makedirs(GRAPH_SNAPSHOTS_DIR, exist_ok=True)
+    logger.info(f"Starting graph snapshot thread - saving to {GRAPH_SNAPSHOTS_DIR}")
+    
+    snapshot_count = 0
+    
+    while True:
+        try:
+            # Generate timestamp for filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            snapshot_count += 1
+            filename = f"network_graph_{timestamp}_{snapshot_count:04d}.png"
+            filepath = os.path.join(GRAPH_SNAPSHOTS_DIR, filename)
+            
+            # Create figure
+            plt.figure(figsize=(12, 10))
+            
+            # Use the stored node positions for consistent layout
+            global node_positions
+            if not node_positions or set(node_positions.keys()) != set(network_graph.nodes):
+                node_positions = nx.spring_layout(network_graph, seed=42)
+            
+            # Get router1's path to router10 from flow table
+            path_to_highlight = []
+            try:
+                file_path = os.path.join(ROUTER_TABLES_DIR, f"router1_table.json")
+                with open(file_path, "r") as file:
+                    router_data = json.load(file)
+                    # Find flow entry for router10
+                    for entry in router_data.get('flow_table', []):
+                        match_info = entry.get('match', {})
+                        if match_info.get('destination') == 'router10':
+                            path_to_highlight = entry.get('path', [])
+                            break
+            except Exception as e:
+                logger.error(f"Error reading router1 flow table: {e}")
+            
+            # Create edge lists for normal and highlighted paths
+            regular_edges = []
+            highlighted_edges = []
+            
+            for u, v, data in network_graph.edges(data=True):
+                # Check if this edge is in the path
+                edge_in_path = False
+                if path_to_highlight:
+                    for i in range(len(path_to_highlight) - 1):
+                        if (u == path_to_highlight[i] and v == path_to_highlight[i+1]) or \
+                          (v == path_to_highlight[i] and u == path_to_highlight[i+1]):
+                            edge_in_path = True
+                            break
+                
+                if edge_in_path:
+                    highlighted_edges.append((u, v))
+                else:
+                    regular_edges.append((u, v))
+            
+            # Draw nodes
+            nx.draw_networkx_nodes(network_graph, node_positions, 
+                                  node_size=1000, 
+                                  node_color="skyblue")
+            
+            # Draw regular edges
+            nx.draw_networkx_edges(network_graph, node_positions, 
+                                  edgelist=regular_edges,
+                                  width=2,
+                                  edge_color='gray',
+                                  alpha=0.7)
+            
+            # Draw highlighted edges
+            if highlighted_edges:
+                nx.draw_networkx_edges(network_graph, node_positions, 
+                                      edgelist=highlighted_edges,
+                                      width=4,
+                                      edge_color='red',
+                                      alpha=1.0)
+            
+            # Create clear labels for nodes
+            labels = {}
+            for node in network_graph.nodes():
+                labels[node] = node
+            nx.draw_networkx_labels(network_graph, node_positions, labels, font_size=12, font_weight='bold')
+            
+            # Add weight information on all edges
+            edge_labels = {}
+            for u, v, data in network_graph.edges(data=True):
+                weight = data.get('weight', 1.0)
+                edge_labels[(u, v)] = f"{weight:.1f}"  # Format to 1 decimal place
+                
+            nx.draw_networkx_edge_labels(network_graph, node_positions, 
+                                        edge_labels=edge_labels, 
+                                        font_size=10,
+                                        font_color='black')
+            
+            # Add title with timestamp
+            plt.title(f"Network Topology - {timestamp}")
+            
+            # Add legend as text in the corner
+            legend_text = "Red edges: Path from router1 to router10"
+            plt.figtext(0.02, 0.02, legend_text, fontsize=10, 
+                       bbox=dict(facecolor='white', alpha=0.8, boxstyle='round'))
+            
+            plt.axis('off')  # Turn off axis
+            
+            # Save to file
+            plt.savefig(filepath, format='png', dpi=150)
+            plt.close()
+            
+            logger.info(f"Saved graph snapshot to {filepath}")
+            
+            # If we have too many snapshots, we could implement cleanup here
+            
+        except Exception as e:
+            logger.error(f"Error generating graph snapshot: {e}")
+        
+        # Sleep for 4 seconds
+        time.sleep(4)
 @app.on_event("startup")
 async def startup_event():
     """Parse the docker-compose.yml on startup"""
@@ -377,6 +504,22 @@ async def startup_event():
     logger.info("Making sure the shared directory exists")
     os.makedirs(ROUTER_TABLES_DIR, exist_ok=True)
     
+    # Clean up previous snapshots
+    snapshots_dir = os.path.join(GRAPH_SNAPSHOTS_DIR)
+    if os.path.exists(snapshots_dir):
+        logger.info(f"Cleaning up previous snapshots from {snapshots_dir}")
+        try:
+            for filename in os.listdir(snapshots_dir):
+                if filename.startswith('network_graph_') and filename.endswith('.png'):
+                    file_path = os.path.join(snapshots_dir, filename)
+                    os.remove(file_path)
+            logger.info("Successfully removed previous snapshots")
+        except Exception as e:
+            logger.error(f"Error cleaning up snapshots: {e}")
+    
+    # Ensure the snapshots directory exists
+    os.makedirs(GRAPH_SNAPSHOTS_DIR, exist_ok=True)
+    
     # Parse docker-compose and build the network graph
     logger.info("Beginning docker-compose parsing")
     parse_docker_compose()
@@ -385,7 +528,14 @@ async def startup_event():
     destination_router = os.environ.get('DESTINATION_ROUTER')
     logger.info(f"Setting up priority path from {source_router} to {destination_router}")
     
-    # prioritize_path(source_router, destination_router)
+
+    # Start graph snapshot thread
+    try:
+        snapshot_thread = threading.Thread(target=generate_graph_snapshots, daemon=True)
+        snapshot_thread.start()
+        logger.info("Started graph snapshot thread")
+    except Exception as e:
+        logger.error(f"Error starting graph snapshot thread: {e}")
 
 @app.post("/sdn_controller/update_link_metrics/{router_id}")
 def update_link_metrics(router_id: str, metrics: Dict[str, float]):
