@@ -5,7 +5,8 @@ import os
 import threading
 import time
 import logging
-
+import random
+import requests
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("router_agent")
@@ -587,12 +588,73 @@ class RouterAgent:
             # Sleep for a while before the next status update
             time.sleep(60)  # Print status every 60 seconds
     
+    def generate_random_metrics(self):
+        """Generate random metrics for links to neighbors"""
+        metrics = {}
+        neighbors = self.get_neighbors()
+        
+        for neighbor in neighbors:
+            # Generate random metric between 1 and 10
+            metrics[neighbor] = random.randint(1, 1000)
+        
+        return metrics
+
+    def report_metrics_to_sdn(self):
+        """Periodically report metrics to the SDN controller"""
+        while self.running:
+            try:
+                # Wait for a random interval (30-60 seconds)
+                time.sleep(30 + 30 * random.random())
+                
+                # Generate random metrics
+                metrics = self.generate_random_metrics()
+                logger.info(f"Generated metrics: {metrics}")
+                
+                # Send to SDN controller
+                sdn_url = "http://sdn_controller:8000/sdn_controller/update_link_metrics/" + self.router_id
+                
+                # Create a socket connection to the SDN controller
+                # try:
+                    # Use requests library if availableX
+                response = requests.post(sdn_url, json=metrics, timeout=5)
+                if response.status_code == 200:
+                    logger.info(f"Successfully reported metrics to SDN controller")
+                else:
+                    logger.error(f"Failed to report metrics: {response.status_code} - {response.text}")
+                # except ImportError:
+                #     # Fallback to using socket directly
+                #     sdn_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                #     sdn_socket.connect(("sdn_controller", 8000))
+                    
+                #     # Create HTTP POST request
+                #     metrics_json = json.dumps(metrics)
+                #     http_request = (
+                #         f"POST /sdn_controller/update_link_metrics/{self.router_id} HTTP/1.1\r\n"
+                #         f"Host: sdn_controller:8000\r\n"
+                #         f"Content-Type: application/json\r\n"
+                #         f"Content-Length: {len(metrics_json)}\r\n"
+                #         f"\r\n"
+                #         f"{metrics_json}"
+                #     )
+                #     sdn_socket.send(http_request.encode('utf-8'))
+                    
+                    # Get response
+                    # response = sdn_socket.recv(4096).decode('utf-8')
+                    # logger.info(f"SDN response: {response}")
+                    # sdn_socket.close()
+                    
+            except Exception as e:
+                logger.error(f"Error reporting metrics to SDN: {e}")
+    
     def run(self):
         """Run the router agent"""
         logger.info(f"Starting router agent for {self.router_id}")
         
         # Start periodic routing table refresh
-        # self.start_periodic_table_refresh()
+        self.start_periodic_table_refresh()
+        
+        # Clean up any self-connections
+        # self.cleanup_self_connections()
         
         # Establish initial connections to neighbors
         self.update_neighbor_connections()
@@ -604,6 +666,10 @@ class RouterAgent:
         # Start periodic connection status reporting
         status_thread = threading.Thread(target=self.print_neighbor_status, daemon=True)
         status_thread.start()
+        
+        # Start periodic metrics reporting to SDN controller
+        metrics_thread = threading.Thread(target=self.report_metrics_to_sdn, daemon=True)
+        metrics_thread.start()
         
         try:
             # Keep the main thread alive

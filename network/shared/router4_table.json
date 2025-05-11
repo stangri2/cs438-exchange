@@ -28,14 +28,15 @@
         "destination": "router1"
       },
       "action": {
-        "forward_to": "router1"
+        "forward_to": "router3"
       },
       "priority": 100,
       "path": [
         "router4",
+        "router3",
         "router1"
       ],
-      "metric": 1
+      "metric": 773.0
     },
     {
       "match": {
@@ -49,7 +50,7 @@
         "router4",
         "router3"
       ],
-      "metric": 1
+      "metric": 437.0
     },
     {
       "match": {
@@ -63,7 +64,7 @@
         "router4",
         "router5"
       ],
-      "metric": 1
+      "metric": 305.0
     },
     {
       "match": {
@@ -77,26 +78,11 @@
         "router4",
         "router6"
       ],
-      "metric": 1
+      "metric": 589.0
     },
     {
       "match": {
         "destination": "router2"
-      },
-      "action": {
-        "forward_to": "router1"
-      },
-      "priority": 100,
-      "path": [
-        "router4",
-        "router1",
-        "router2"
-      ],
-      "metric": 2
-    },
-    {
-      "match": {
-        "destination": "router7"
       },
       "action": {
         "forward_to": "router5"
@@ -105,9 +91,26 @@
       "path": [
         "router4",
         "router5",
+        "router2"
+      ],
+      "metric": 954.0
+    },
+    {
+      "match": {
+        "destination": "router7"
+      },
+      "action": {
+        "forward_to": "router6"
+      },
+      "priority": 100,
+      "path": [
+        "router4",
+        "router6",
+        "router9",
+        "router8",
         "router7"
       ],
-      "metric": 2
+      "metric": 1068.0
     },
     {
       "match": {
@@ -120,9 +123,10 @@
       "path": [
         "router4",
         "router6",
+        "router9",
         "router8"
       ],
-      "metric": 2
+      "metric": 839.0
     },
     {
       "match": {
@@ -137,7 +141,7 @@
         "router6",
         "router9"
       ],
-      "metric": 2
+      "metric": 796.0
     },
     {
       "match": {
@@ -150,27 +154,10 @@
       "path": [
         "router4",
         "router6",
-        "router8",
+        "router9",
         "router10"
       ],
-      "metric": 3
-    },
-    {
-      "match": {
-        "source": "router1",
-        "destination": "router10"
-      },
-      "action": {
-        "forward_to": "router6"
-      },
-      "priority": 200,
-      "path": [
-        "router4",
-        "router6",
-        "router8",
-        "router10"
-      ],
-      "metric": 3
+      "metric": 979.0
     }
   ],
   "routes": [

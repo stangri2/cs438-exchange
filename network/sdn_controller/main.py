@@ -119,7 +119,8 @@ def parse_docker_compose():
                         subnet=subnet,
                         network=network_name,
                         router1_ip=router1_ip,
-                        router2_ip=router2_ip
+                        router2_ip=router2_ip,
+                        weight=calculate_link_weight(network_name, router1_id, router2_id)
                     )
                     logger.info(f"Added link between {router1_id} and {router2_id} on network {network_name}")
 
@@ -203,10 +204,13 @@ def calculate_flow_tables():
     """Calculate and populate flow tables for all routers using Dijkstra's algorithm"""
     logger.info("Calculating optimal paths for all router pairs...")
     
-    # For each router, calculate shortest paths to all other routers
+    # For each router, calculate shortest paths to all destinations
     for source in network_graph.nodes:
-        # Get shortest paths from this source to all destinations
-        paths = nx.single_source_dijkstra_path(network_graph, source)
+        # Get shortest paths from this source to all destinations using weights
+        # Format: {destination: (distance, path)}
+        paths_with_distances = nx.single_source_dijkstra(network_graph, source, weight='weight')
+        # Unpack into separate dictionaries
+        distances, paths = paths_with_distances
         
         # Get the router's current table
         file_path = os.path.join(ROUTER_TABLES_DIR, f"{source}_table.json")
@@ -227,6 +231,7 @@ def calculate_flow_tables():
                 
             if len(path) > 1:
                 next_hop = path[1]  # Next router in the path
+                distance = distances[destination]  # Total path cost
                 
                 # Create a flow entry
                 flow_entry = {
@@ -238,7 +243,7 @@ def calculate_flow_tables():
                     },
                     "priority": 100,
                     "path": path,
-                    "metric": len(path) - 1
+                    "metric": distance  # Use actual distance now instead of hop count
                 }
                 
                 router_data['flow_table'].append(flow_entry)
@@ -247,55 +252,10 @@ def calculate_flow_tables():
         save_router_table(source, router_data)
         logger.info(f"Updated flow table for {source} with {len(router_data['flow_table'])} entries")
 
-def prioritize_path(source_router, destination_router, priority=200):
-    """Set higher priority flow rules for a specific source-destination path"""
-    try:
-        # Calculate shortest path
-        path = nx.shortest_path(network_graph, source_router, destination_router)
-        
-        # Update flow tables along the path
-        for i in range(len(path) - 1):
-            current = path[i]
-            
-            # Get current router's table
-            file_path = os.path.join(ROUTER_TABLES_DIR, f"{current}_table.json")
-            with open(file_path, "r") as file:
-                router_data = json.load(file)
-            
-            # Add or update the flow entry with higher priority
-            next_hop = path[i + 1]
-            priority_flow = {
-                "match": {
-                    "source": source_router,
-                    "destination": destination_router
-                },
-                "action": {
-                    "forward_to": next_hop
-                },
-                "priority": priority,  # Higher priority than regular flows
-                "path": path[i:],
-                "metric": len(path) - i - 1
-            }
-            
-            # Remove any existing entries for this source-destination pair
-            router_data['flow_table'] = [
-                flow for flow in router_data['flow_table'] 
-                if not (flow.get('match', {}).get('source') == source_router and 
-                        flow.get('match', {}).get('destination') == destination_router)
-            ]
-            
-            # Add the priority flow
-            router_data['flow_table'].append(priority_flow)
-            
-            # Save updated table
-            save_router_table(current, router_data)
-            
-        logger.info(f"Priority path set from {source_router} to {destination_router}: {path}")
-        return path
-        
-    except nx.NetworkXNoPath:
-        logger.error(f"No path found between {source_router} and {destination_router}")
-        return None
+def calculate_link_weight(network_name, router1_id, router2_id):
+    """Calculate default weight for a link"""
+    # Default base weight
+    return 1.0
 
 @app.get("/sdn_controller/health")
 def service_health():
@@ -425,7 +385,58 @@ async def startup_event():
     destination_router = os.environ.get('DESTINATION_ROUTER')
     logger.info(f"Setting up priority path from {source_router} to {destination_router}")
     
-    prioritize_path(source_router, destination_router)
+    # prioritize_path(source_router, destination_router)
+
+@app.post("/sdn_controller/update_link_metrics/{router_id}")
+def update_link_metrics(router_id: str, metrics: Dict[str, float]):
+    """
+    Update link weights based on router metrics
+    
+    router_id: The ID of the router reporting metrics
+    metrics: Dictionary with keys as neighbor router IDs and values as metric weights
+    """
+    try:
+        logger.info(f"Received metrics from {router_id}: {metrics}")
+        
+        # Validate router exists
+        if router_id not in network_graph.nodes:
+            raise HTTPException(status_code=404, detail=f"Router {router_id} not found")
+        
+        # Update weights for each reported link
+        for neighbor_id, metric in metrics.items():
+            if neighbor_id not in network_graph.nodes:
+                logger.warning(f"Neighbor {neighbor_id} does not exist in network graph")
+                continue
+                
+            if not network_graph.has_edge(router_id, neighbor_id):
+                logger.warning(f"No direct link between {router_id} and {neighbor_id}")
+                continue
+                
+            # Update the edge weight
+            current_weight = network_graph[router_id][neighbor_id].get('weight', 1.0)
+            
+            # You could use different strategies here:
+            # 1. Replace the weight: network_graph[router_id][neighbor_id]['weight'] = metric
+            # 2. Add to the weight: network_graph[router_id][neighbor_id]['weight'] = current_weight + metric
+            # 3. Use weighted average: network_graph[router_id][neighbor_id]['weight'] = 0.7*current_weight + 0.3*metric
+            
+            # For now, we'll use option 2: add to the weight
+            # network_graph[router_id][neighbor_id]['weight'] = current_weight + metric
+            network_graph[router_id][neighbor_id]['weight'] = metric
+            logger.info(f"Updated link {router_id}-{neighbor_id} weight to {network_graph[router_id][neighbor_id]['weight']}")
+        
+        # Recalculate flow tables with updated weights
+        calculate_flow_tables()
+        
+        return {
+            "status": "success", 
+            "message": f"Updated metrics for {router_id}",
+            "updated_links": len(metrics)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error updating metrics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     logger.info("Starting SDN Controller server")
