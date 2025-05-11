@@ -3,31 +3,34 @@ FROM ubuntu:22.04 AS build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# tool-chain + python + CA bundle
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
         git \
-        ca-certificates \          
-    && update-ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+        ca-certificates \
+        python3 \
+        python3-pip && \
+    update-ca-certificates && \
+    pip3 install --no-cache-dir pytest && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
 COPY . .
 
-# configure, build *and* run tests
+# configure, build, **unit-test**, **E2E-test**
 RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
  && cmake --build build -j$(nproc) \
- # build the merged-tests target
  && cmake --build build --target unit_tests \
- # run the tests (fails the layer if any test fails)
- && cd build && ctest --output-on-failure
+ && cd build && ctest --output-on-failure \
+ && cd /workspace && pytest -q tests/e2e
 
-# ── Stage 2 : slim runtime image ───────────────────────────────────
+# ── Stage 2 : slim runtime image ────────────────────────────────────
 FROM ubuntu:22.04
 
 WORKDIR /app
-# executable ends up in build/src/ (because src/CMakeLists.txt adds_subdirectory)
+# executable produced in build/src/
 COPY --from=build /workspace/build/src/exchange .
 
 EXPOSE 9000
