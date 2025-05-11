@@ -40,3 +40,5 @@
 build/
 
 .vscode/
+vscode/
+network/venv/
