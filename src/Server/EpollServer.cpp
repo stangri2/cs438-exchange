@@ -4,12 +4,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>
-
-#ifdef __APPLE__
-  #include <sys/epoll.h>
-#else
-  #include <sys/epoll.h>
-#endif
+#include <sys/epoll.h>
 
 
 namespace srv {

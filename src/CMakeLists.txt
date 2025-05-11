@@ -47,17 +47,6 @@ target_include_directories(epoll_server
 target_link_libraries(epoll_server
     PUBLIC message_codec      # pulls in codec → engine → book
 )
-# ---- macOS epoll-shim ------------------------------------------------
-if(APPLE)
-    # Hard-code Homebrew prefix; adjust if yours differs
-    set(EPOLL_SHIM_ROOT "/opt/homebrew/opt/epoll-shim")
-
-    target_include_directories(epoll_server
-        PUBLIC "${EPOLL_SHIM_ROOT}/include/libepoll-shim")
-
-    target_link_libraries(epoll_server
-        PUBLIC "${EPOLL_SHIM_ROOT}/lib/libepoll-shim.dylib")
-endif()
 
 # -------------------------------------------------------------------
 # Executable
@@ -78,4 +67,32 @@ add_custom_target(run
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+# ───────────────────── Catch2 (header-only) ──────────────────────────
+include(FetchContent)
+FetchContent_Declare(
+    catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v3.5.4
+)
+FetchContent_MakeAvailable(catch2)
 
+# ─────────────── discover *.test.cpp in this tree ────────────────────
+file(GLOB_RECURSE UNIT_TEST_SOURCES CONFIGURE_DEPENDS
+     ${CMAKE_CURRENT_SOURCE_DIR}/*/*.test.cpp)   # src/**/*
+
+if(UNIT_TEST_SOURCES)
+    add_executable(unit_tests ${UNIT_TEST_SOURCES})
+
+    target_link_libraries(unit_tests
+        PRIVATE message_codec
+        PRIVATE Threads::Threads
+        PRIVATE Catch2::Catch2WithMain
+    )
+
+    # so tests can #include "OrderBook.hpp" etc.
+    target_include_directories(unit_tests
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+    enable_testing()
+    add_test(NAME unit COMMAND unit_tests)
+endif()
