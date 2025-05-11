@@ -127,6 +127,9 @@ def parse_docker_compose():
         
         # Generate initial routing tables based on the topology
         generate_routing_tables()
+
+        # Calculate flow tables for optimal routing
+        calculate_flow_tables()
         
     except Exception as e:
         logger.error(f"Error parsing docker-compose.yml: {str(e)}")
@@ -195,6 +198,104 @@ def save_router_table(router_id, table):
     with open(file_path, 'w') as file:
         json.dump(table, file, indent=2)
     logger.info(f"Saved routing table for {router_id}")
+
+def calculate_flow_tables():
+    """Calculate and populate flow tables for all routers using Dijkstra's algorithm"""
+    logger.info("Calculating optimal paths for all router pairs...")
+    
+    # For each router, calculate shortest paths to all other routers
+    for source in network_graph.nodes:
+        # Get shortest paths from this source to all destinations
+        paths = nx.single_source_dijkstra_path(network_graph, source)
+        
+        # Get the router's current table
+        file_path = os.path.join(ROUTER_TABLES_DIR, f"{source}_table.json")
+        try:
+            with open(file_path, "r") as file:
+                router_data = json.load(file)
+        except FileNotFoundError:
+            logger.error(f"Table for router {source} not found")
+            continue
+            
+        # Reset flow table
+        router_data['flow_table'] = []
+        
+        # Create flow entries for each destination
+        for destination, path in paths.items():
+            if source == destination:
+                continue  # Skip self
+                
+            if len(path) > 1:
+                next_hop = path[1]  # Next router in the path
+                
+                # Create a flow entry
+                flow_entry = {
+                    "match": {
+                        "destination": destination
+                    },
+                    "action": {
+                        "forward_to": next_hop
+                    },
+                    "priority": 100,
+                    "path": path,
+                    "metric": len(path) - 1
+                }
+                
+                router_data['flow_table'].append(flow_entry)
+        
+        # Save updated router table
+        save_router_table(source, router_data)
+        logger.info(f"Updated flow table for {source} with {len(router_data['flow_table'])} entries")
+
+def prioritize_path(source_router, destination_router, priority=200):
+    """Set higher priority flow rules for a specific source-destination path"""
+    try:
+        # Calculate shortest path
+        path = nx.shortest_path(network_graph, source_router, destination_router)
+        
+        # Update flow tables along the path
+        for i in range(len(path) - 1):
+            current = path[i]
+            
+            # Get current router's table
+            file_path = os.path.join(ROUTER_TABLES_DIR, f"{current}_table.json")
+            with open(file_path, "r") as file:
+                router_data = json.load(file)
+            
+            # Add or update the flow entry with higher priority
+            next_hop = path[i + 1]
+            priority_flow = {
+                "match": {
+                    "source": source_router,
+                    "destination": destination_router
+                },
+                "action": {
+                    "forward_to": next_hop
+                },
+                "priority": priority,  # Higher priority than regular flows
+                "path": path[i:],
+                "metric": len(path) - i - 1
+            }
+            
+            # Remove any existing entries for this source-destination pair
+            router_data['flow_table'] = [
+                flow for flow in router_data['flow_table'] 
+                if not (flow.get('match', {}).get('source') == source_router and 
+                        flow.get('match', {}).get('destination') == destination_router)
+            ]
+            
+            # Add the priority flow
+            router_data['flow_table'].append(priority_flow)
+            
+            # Save updated table
+            save_router_table(current, router_data)
+            
+        logger.info(f"Priority path set from {source_router} to {destination_router}: {path}")
+        return path
+        
+    except nx.NetworkXNoPath:
+        logger.error(f"No path found between {source_router} and {destination_router}")
+        return None
 
 @app.get("/sdn_controller/health")
 def service_health():
@@ -319,6 +420,12 @@ async def startup_event():
     # Parse docker-compose and build the network graph
     logger.info("Beginning docker-compose parsing")
     parse_docker_compose()
+
+    source_router = os.environ.get('SOURCE_ROUTER')
+    destination_router = os.environ.get('DESTINATION_ROUTER')
+    logger.info(f"Setting up priority path from {source_router} to {destination_router}")
+    
+    prioritize_path(source_router, destination_router)
 
 if __name__ == "__main__":
     logger.info("Starting SDN Controller server")

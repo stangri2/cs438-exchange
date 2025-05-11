@@ -154,6 +154,9 @@ services:
       - router8
       - router9
       - router10
+    environment:
+      - SOURCE_ROUTER=router1
+      - DESTINATION_ROUTER=router10
   
   # Router 1: connected to routers 2, 3, and 4
   router1:

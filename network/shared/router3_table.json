@@ -12,7 +12,146 @@
       "ip_address": "192.168.34.2"
     }
   },
-  "flow_table": [],
+  "flow_table": [
+    {
+      "match": {
+        "destination": "router1"
+      },
+      "action": {
+        "forward_to": "router1"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router1"
+      ],
+      "metric": 1
+    },
+    {
+      "match": {
+        "destination": "router4"
+      },
+      "action": {
+        "forward_to": "router4"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router4"
+      ],
+      "metric": 1
+    },
+    {
+      "match": {
+        "destination": "router2"
+      },
+      "action": {
+        "forward_to": "router1"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router1",
+        "router2"
+      ],
+      "metric": 2
+    },
+    {
+      "match": {
+        "destination": "router5"
+      },
+      "action": {
+        "forward_to": "router4"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router4",
+        "router5"
+      ],
+      "metric": 2
+    },
+    {
+      "match": {
+        "destination": "router6"
+      },
+      "action": {
+        "forward_to": "router4"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router4",
+        "router6"
+      ],
+      "metric": 2
+    },
+    {
+      "match": {
+        "destination": "router7"
+      },
+      "action": {
+        "forward_to": "router1"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router1",
+        "router2",
+        "router7"
+      ],
+      "metric": 3
+    },
+    {
+      "match": {
+        "destination": "router8"
+      },
+      "action": {
+        "forward_to": "router4"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router4",
+        "router6",
+        "router8"
+      ],
+      "metric": 3
+    },
+    {
+      "match": {
+        "destination": "router9"
+      },
+      "action": {
+        "forward_to": "router4"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router4",
+        "router6",
+        "router9"
+      ],
+      "metric": 3
+    },
+    {
+      "match": {
+        "destination": "router10"
+      },
+      "action": {
+        "forward_to": "router4"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router4",
+        "router6",
+        "router8",
+        "router10"
+      ],
+      "metric": 4
+    }
+  ],
   "routes": [
     {
       "destination": "router1",

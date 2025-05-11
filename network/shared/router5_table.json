@@ -22,7 +22,140 @@
       "ip_address": "192.168.57.2"
     }
   },
-  "flow_table": [],
+  "flow_table": [
+    {
+      "match": {
+        "destination": "router2"
+      },
+      "action": {
+        "forward_to": "router2"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router2"
+      ],
+      "metric": 1
+    },
+    {
+      "match": {
+        "destination": "router4"
+      },
+      "action": {
+        "forward_to": "router4"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router4"
+      ],
+      "metric": 1
+    },
+    {
+      "match": {
+        "destination": "router6"
+      },
+      "action": {
+        "forward_to": "router6"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router6"
+      ],
+      "metric": 1
+    },
+    {
+      "match": {
+        "destination": "router7"
+      },
+      "action": {
+        "forward_to": "router7"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router7"
+      ],
+      "metric": 1
+    },
+    {
+      "match": {
+        "destination": "router1"
+      },
+      "action": {
+        "forward_to": "router2"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router2",
+        "router1"
+      ],
+      "metric": 2
+    },
+    {
+      "match": {
+        "destination": "router3"
+      },
+      "action": {
+        "forward_to": "router4"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router4",
+        "router3"
+      ],
+      "metric": 2
+    },
+    {
+      "match": {
+        "destination": "router8"
+      },
+      "action": {
+        "forward_to": "router6"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router6",
+        "router8"
+      ],
+      "metric": 2
+    },
+    {
+      "match": {
+        "destination": "router9"
+      },
+      "action": {
+        "forward_to": "router6"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router6",
+        "router9"
+      ],
+      "metric": 2
+    },
+    {
+      "match": {
+        "destination": "router10"
+      },
+      "action": {
+        "forward_to": "router6"
+      },
+      "priority": 100,
+      "path": [
+        "router5",
+        "router6",
+        "router8",
+        "router10"
+      ],
+      "metric": 3
+    }
+  ],
   "routes": [
     {
       "destination": "router1",

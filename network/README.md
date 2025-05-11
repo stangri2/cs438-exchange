@@ -22,9 +22,9 @@ docker ps -a
 ```
 
 ```
-docker compose down
+docker compose down -volumes --remove-orphans
 docker compose build sdn_controller
-docker compose build router1 router2
+docker compose build router1 router2 router3 router4 router5 router6 router7 router8 router9 router10
 docker compose up -d
 
 docker logs sdn_controller
