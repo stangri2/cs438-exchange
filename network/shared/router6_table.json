@@ -1,0 +1,86 @@
+{
+  "router_id": "router6",
+  "interfaces": {
+    "router4": {
+      "network": "link-4-6",
+      "subnet": "192.168.46.0/24",
+      "ip_address": "192.168.46.3"
+    },
+    "router5": {
+      "network": "link-5-6",
+      "subnet": "192.168.56.0/24",
+      "ip_address": "192.168.56.3"
+    },
+    "router8": {
+      "network": "link-6-8",
+      "subnet": "192.168.68.0/24",
+      "ip_address": "192.168.68.2"
+    },
+    "router9": {
+      "network": "link-6-9",
+      "subnet": "192.168.69.0/24",
+      "ip_address": "192.168.69.2"
+    }
+  },
+  "flow_table": [],
+  "routes": [
+    {
+      "destination": "router1",
+      "destination_subnet": "192.168.14.0/24",
+      "next_hop": "router4",
+      "metric": 2
+    },
+    {
+      "destination": "router2",
+      "destination_subnet": "192.168.25.0/24",
+      "next_hop": "router5",
+      "metric": 2
+    },
+    {
+      "destination": "router3",
+      "destination_subnet": "192.168.34.0/24",
+      "next_hop": "router4",
+      "metric": 2
+    },
+    {
+      "destination": "router4",
+      "destination_subnet": "192.168.46.0/24",
+      "next_hop": "router4",
+      "metric": 1
+    },
+    {
+      "destination": "router5",
+      "destination_subnet": "192.168.56.0/24",
+      "next_hop": "router5",
+      "metric": 1
+    },
+    {
+      "destination": "router7",
+      "destination_subnet": "192.168.57.0/24",
+      "next_hop": "router5",
+      "metric": 2
+    },
+    {
+      "destination": "router8",
+      "destination_subnet": "192.168.68.0/24",
+      "next_hop": "router8",
+      "metric": 1
+    },
+    {
+      "destination": "router9",
+      "destination_subnet": "192.168.69.0/24",
+      "next_hop": "router9",
+      "metric": 1
+    },
+    {
+      "destination": "router10",
+      "destination_subnet": "192.168.110.0/24",
+      "next_hop": "router8",
+      "metric": 2
+    }
+  ],
+  "ports": {
+    "8000": "8006",
+    "9000": "9006"
+  }
+}

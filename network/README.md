@@ -8,7 +8,7 @@ docker compose up -d
 
 We can turn off the setup with:
 ```
-docker compuse down
+docker compose down
 ```
 
 We can completely wipe everything with:
@@ -24,6 +24,7 @@ docker ps -a
 ```
 docker compose down
 docker compose build sdn_controller
+docker compose build router1 router2
 docker compose up -d
 
 docker logs sdn_controller
