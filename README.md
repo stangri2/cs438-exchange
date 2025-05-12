@@ -23,6 +23,12 @@ This exchange system implements a matching engine and order book that can handle
 - `network/`: Network simulation environment for testing
 - `tests/`: Unit and end-to-end tests
 
+## Server Testing
+```bash
+docker build --target build -t exchange_build_dbg .
+docker run -it --rm exchange_build_dbg bash
+
+
 ## Network Simulation
 
 The project includes a software-defined network (SDN) simulation environment in the `/network` directory:
