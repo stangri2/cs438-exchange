@@ -25,6 +25,7 @@ This exchange system implements a matching engine and order book that can handle
 
 ## Server Testing
 ```bash
+# Run the Dockerfile
 docker build --target build -t exchange_build_dbg .
 # Create a bash terminal in the container
 # After running this you can run the unit tests or the executable by going to the build directory, or running the end to end test in the tests directory.
