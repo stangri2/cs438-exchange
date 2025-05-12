@@ -1,0 +1,54 @@
+NFO:router_agent:Forward response: {'status': 'forwarded', 'next_hop': 'router4', 'result': True, 'router': 'router1'}
+
+ERROR:router_agent:Error using existing connection to router4: [Errno 32] Broken pipe
+
+INFO:router_agent:Forwarding to router4 at 192.168.14.2:9000 (new connection)
+
+INFO:router_agent:Attempting to connect to neighbor router4 at 192.168.14.2:9000
+
+INFO:router_agent:Accepted connection from ('192.168.14.2', 45424)
+
+INFO:router_agent:Accepted connection from ('192.168.14.2', 45426)
+
+INFO:router_agent:Received data: {'type': 'data', 'source': 'router1', 'destination': 'router10', 'payload': {'binary_data': '0003000000b22700000000000000012700000000000005000000'}, 'route': ['router1']}
+
+INFO:router_agent:Received data: {'type': 'hello', 'source': 'router1', 'destination': 'router4', 'payload': {'type': 'connection_request'}}
+
+WARNING:router_agent:Rejecting self-connection request from router1
+
+INFO:router_agent:Forwarding packet to router10
+
+INFO:router_agent:Connection established with router4, response: {'type': 'hello_ack', 'source': 'router1', 'destination': 'router1', 'status': 'rejected', 'reason': 'self-connection'}
+
+INFO:router_agent:Forwarding to router4 at 192.168.14.2:9000 (new connection)
+
+INFO:router_agent:Accepted connection from ('192.168.14.2', 45428)
+
+INFO:router_agent:Received data: {'type': 'data', 'source': 'router1', 'destination': 'router10', 'payload': {'binary_data': '0003000000b22700000000000000012700000000000005000000'}, 'route': ['router1']}
+
+INFO:router_agent:Forwarding packet to router10
+
+INFO:router_agent:Forward response: {'status': 'forwarded', 'next_hop': 'router4', 'result': False, 'router': 'router1'}
+
+INFO:router_agent:Forward response: {'status': 'forwarded', 'next_hop': 'router4', 'result': True, 'router': 'router1'}
+
+ERROR:router_agent:Error using existing connection to router4: [Errno 32] Broken pipe
+
+INFO:router_agent:Attempting to connect to neighbor router4 at 192.168.14.2:9000
+
+INFO:router_agent:Accepted connection from ('192.168.14.2', 45430)
+
+INFO:router_agent:Received data: {'type': 'hello', 'source': 'router1', 'destination': 'router4', 'payload': {'type': 'connection_request'}}
+
+WARNING:router_agent:Rejecting self-connection request from router1
+
+INFO:router_agent:Forwarding to router4 at 192.168.14.2:9000 (new connection)
+
+INFO:router_agent:Connection established with router4, response: {'type': 'hello_ack', 'source': 'router1', 'destination': 'router1', 'status': 'rejected', 'reason': 'self-connection'}
+
+INFO:router_agent:Accepted connection from ('192.168.14.2', 45432)
+
+INFO:router_agent:Received data: {'type': 'data', 'source': 'router1', 'destination': 'router10', 'payload': {'binary_data': '0004000000b327000000000000011f2700000000000004000000'}, 'route': ['router1']}
+
+INFO:router_agent:Forwarding packet to router10
+
