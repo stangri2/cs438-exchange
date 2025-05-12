@@ -30,7 +30,7 @@
         "router2",
         "router1"
       ],
-      "metric": 263.0
+      "metric": 1.0
     },
     {
       "match": {
@@ -44,7 +44,7 @@
         "router2",
         "router5"
       ],
-      "metric": 489.0
+      "metric": 1.0
     },
     {
       "match": {
@@ -58,7 +58,7 @@
         "router2",
         "router7"
       ],
-      "metric": 985.0
+      "metric": 1.0
     },
     {
       "match": {
@@ -71,10 +71,9 @@
       "path": [
         "router2",
         "router1",
-        "router4",
         "router3"
       ],
-      "metric": 950.0
+      "metric": 2.0
     },
     {
       "match": {
@@ -89,7 +88,7 @@
         "router1",
         "router4"
       ],
-      "metric": 734.0
+      "metric": 2.0
     },
     {
       "match": {
@@ -104,7 +103,7 @@
         "router5",
         "router6"
       ],
-      "metric": 1138.0
+      "metric": 2.0
     },
     {
       "match": {
@@ -119,7 +118,7 @@
         "router7",
         "router8"
       ],
-      "metric": 992.0
+      "metric": 2.0
     },
     {
       "match": {
@@ -132,10 +131,9 @@
       "path": [
         "router2",
         "router7",
-        "router8",
         "router9"
       ],
-      "metric": 1246.0
+      "metric": 2.0
     },
     {
       "match": {
@@ -151,7 +149,7 @@
         "router8",
         "router10"
       ],
-      "metric": 1748.0
+      "metric": 3.0
     }
   ],
   "routes": [

@@ -10,8 +10,8 @@ Single-threaded load driver for the exchange.
 import os, sys, socket, struct, time, random
 
 # ────────── parameters you can tweak ───────────────────────────────
-HOST        = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
-PORT        = int(sys.argv[2]) if len(sys.argv) > 2 else 4000
+HOST        = sys.argv[1]
+PORT        = int(sys.argv[2])
 NUM_CLIENTS = 5
 INTERVAL_MS = 250
 BASE_PRICE  = 100_00          # integer cents (100.00)

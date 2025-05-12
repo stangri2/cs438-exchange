@@ -128,6 +128,20 @@ networks:
         - subnet: 10.0.0.0/24
           gateway: 10.0.0.1
 
+  client-router1:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.250.0/24
+          gateway: 192.168.250.1
+
+  server-router10:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24  # Using a completely different subnet range
+          gateway: 172.20.0.1
+
 services:
   # SDN controller service
   sdn_controller:
@@ -173,6 +187,8 @@ services:
         ipv4_address: 192.168.14.2
       management:
         ipv4_address: 10.0.0.10
+      client-router1:
+        ipv4_address: 192.168.250.2
     cap_add:
       - NET_ADMIN
     sysctls:
@@ -420,7 +436,7 @@ services:
       - ROUTER_ID=router9
       - PORT=9000
   
-  # New router 10: connected to routers 8 and 9
+  # New router 10: connected to routers 8 and 9 and exchange server
   router10:
     build:
       context: ./router
@@ -433,6 +449,8 @@ services:
         ipv4_address: 192.168.120.3
       management:
         ipv4_address: 10.0.0.19
+      server-router10:
+        ipv4_address: 172.20.0.2
     cap_add:
       - NET_ADMIN
     sysctls:
@@ -445,3 +463,34 @@ services:
     environment:
       - ROUTER_ID=router10
       - PORT=9000
+
+  # Exchange client that connects to router1
+  exchange_client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: exchange_client
+    networks:
+      client-router1:
+        ipv4_address: 192.168.250.3
+    depends_on:
+      - router1
+    volumes:
+      - ./shared:/shared
+    restart: unless-stopped
+
+  # Exchange server that connects to router10
+  exchange_server:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: exchange_server
+    networks:
+      server-router10:
+        ipv4_address: 172.20.0.3
+    depends_on:
+      - router10
+    ports:
+      - "6000:6000"  # Expose the exchange server port
+    volumes:
+      - ./shared:/shared

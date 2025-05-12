@@ -261,81 +261,184 @@ class RouterAgent:
             if not data:
                 client_socket.close()
                 return
+            
+            # Check if this is binary data (exchange client protocol)
+            if data[0] == 0:  # NEW order message type is 0
+                if self.router_id == "router1":
+                    logger.info(f"Received exchange client binary packet from {addr}")
+                    return self.handle_exchange_client(client_socket, data)
+                else:
+                    logger.error(f"Non-router1 received exchange client connection")
+                    client_socket.close()
+                    return
                 
-            # Parse packet
-            packet = json.loads(data.decode('utf-8'))
-            logger.info(f"Received data: {packet}")
-            
-            # Check packet type
-            packet_type = packet.get('type', 'data')
-            
-            if packet_type == 'hello':
-                # This is a connection request from another router
-                source_router = packet.get('source')
-                if source_router:
-                    # Check if this is a self-connection and reject it
-                    if source_router == self.router_id:
-                        logger.warning(f"Rejecting self-connection request from {source_router}")
+            # Parse packet as JSON
+            try:
+                packet = json.loads(data.decode('utf-8'))
+                logger.info(f"Received data: {packet}")
+                
+                # Check packet type
+                packet_type = packet.get('type', 'data')
+                
+                if packet_type == 'hello':
+                    # This is a connection request from another router
+                    source_router = packet.get('source')
+                    if source_router:
+                        # Check if this is a self-connection and reject it
+                        if source_router == self.router_id:
+                            logger.warning(f"Rejecting self-connection request from {source_router}")
+                            response = {
+                                "type": "hello_ack",
+                                "source": self.router_id,
+                                "destination": source_router,
+                                "status": "rejected",
+                                "reason": "self-connection"
+                            }
+                            client_socket.send(json.dumps(response).encode('utf-8'))
+                            client_socket.close()
+                            return
+                        
+                        logger.info(f"Received connection request from {source_router}")
+                        
+                        # Send acknowledgment
                         response = {
                             "type": "hello_ack",
                             "source": self.router_id,
                             "destination": source_router,
-                            "status": "rejected",
-                            "reason": "self-connection"
+                            "status": "accepted"
                         }
                         client_socket.send(json.dumps(response).encode('utf-8'))
-                        client_socket.close()
-                        return
-                    
-                    logger.info(f"Received connection request from {source_router}")
-                    
-                    # Send acknowledgment
-                    response = {
-                        "type": "hello_ack",
-                        "source": self.router_id,
-                        "destination": source_router,
-                        "status": "accepted"
-                    }
-                    client_socket.send(json.dumps(response).encode('utf-8'))
-                    
-                    # Store connection
-                    with self.connection_lock:
-                        self.neighbor_connections[source_router] = {
-                            'socket': client_socket,
-                            'ip': addr[0],
-                            'status': 'connected',
-                            'last_activity': time.time()
+                        
+                        # Store connection
+                        with self.connection_lock:
+                            self.neighbor_connections[source_router] = {
+                                'socket': client_socket,
+                                'ip': addr[0],
+                                'status': 'connected',
+                                'last_activity': time.time()
+                            }
+                        
+                        # Start heartbeat monitoring in a separate thread
+                        threading.Thread(target=self.monitor_connection, 
+                                        args=(source_router, client_socket), 
+                                        daemon=True).start()
+                        
+                        return  # Keep connection open
+                
+                elif packet_type == 'heartbeat':
+                    # Respond to heartbeat
+                    source_router = packet.get('source')
+                    if source_router:
+                        response = {
+                            "type": "heartbeat_ack",
+                            "source": self.router_id,
+                            "destination": source_router,
+                            "timestamp": time.time()
                         }
-                    
-                    # Start heartbeat monitoring in a separate thread
-                    threading.Thread(target=self.monitor_connection, 
-                                    args=(source_router, client_socket), 
-                                    daemon=True).start()
-                    
-                    return  # Keep connection open
-            
-            elif packet_type == 'heartbeat':
-                # Respond to heartbeat
-                source_router = packet.get('source')
-                if source_router:
-                    response = {
-                        "type": "heartbeat_ack",
-                        "source": self.router_id,
-                        "destination": source_router,
-                        "timestamp": time.time()
-                    }
-                    client_socket.send(json.dumps(response).encode('utf-8'))
-                    return  # Keep connection open
-            
-            # If not a connection request or heartbeat, treat as a data packet
-            self.handle_packet(client_socket, packet)
-            
+                        client_socket.send(json.dumps(response).encode('utf-8'))
+                        return  # Keep connection open
+                
+                # If not a connection request or heartbeat, treat as a data packet
+                self.handle_packet(client_socket, packet)
+            except json.JSONDecodeError:
+                logger.error(f"Received non-JSON data and not binary exchange format, closing connection")
+                client_socket.close()
+                
         except Exception as e:
             logger.error(f"Error handling connection: {e}")
             try:
                 client_socket.close()
             except:
                 pass
+    
+    def handle_exchange_client(self, client_socket, initial_data):
+        """Handle exchange client connection and forward to the exchange server"""
+        if self.router_id != "router1":
+            logger.error("Only router1 should handle exchange client connections")
+            client_socket.close()
+            return
+        
+        # Connect to router10
+        try:
+            # First, find the next hop to router10
+            next_hop = self.get_next_hop("router10")
+            logger.info(f"EXCHANGE ROUTING: Next hop to router10: {next_hop} ----")
+            if not next_hop:
+                logger.error("No route to router10 for exchange client packet")
+                client_socket.close()
+                return
+            
+            # Create a thread to handle ongoing communication
+            threading.Thread(
+                target=self.exchange_forwarding_loop,
+                args=(client_socket, next_hop, initial_data),
+                daemon=True
+            ).start()
+            
+        except Exception as e:
+            logger.error(f"Error setting up exchange client forwarding: {e}")
+            client_socket.close()
+    
+    def exchange_forwarding_loop(self, client_socket, next_hop, initial_data):
+        """Forward exchange traffic between client and server via the router network"""
+        try:
+            # Create a special exchange packet for router network
+            exchange_packet = {
+                "type": "exchange_data",
+                "source": self.router_id,
+                "destination": "router10",
+                "payload": {
+                    "binary_data": initial_data.hex()  # Convert binary to hex string for JSON
+                }
+            }
+            
+            # Use our existing forwarding mechanism
+            forward_result = self.forward_packet(exchange_packet, next_hop)
+            if not forward_result:
+                logger.error("Failed to forward initial exchange packet")
+                client_socket.close()
+                return
+            
+            # Now establish an ongoing forwarding loop
+            while self.running:
+                try:
+                    client_socket.settimeout(1.0)  # Short timeout to check running flag
+                    data = client_socket.recv(4096)
+                    if not data:
+                        logger.info("Exchange client closed connection")
+                        break
+                    
+                    # Forward the data
+                    exchange_packet = {
+                        "type": "exchange_data",
+                        "source": self.router_id,
+                        "destination": "router10",
+                        "payload": {
+                            "binary_data": data.hex()
+                        }
+                    }
+                    
+                    forward_result = self.forward_packet(exchange_packet, next_hop)
+                    if not forward_result:
+                        logger.error("Failed to forward exchange packet")
+                        break
+                    
+                except socket.timeout:
+                    # Just a timeout to check running flag
+                    continue
+                except Exception as e:
+                    logger.error(f"Error in exchange forwarding loop: {e}")
+                    break
+        
+        except Exception as e:
+            logger.error(f"Exchange forwarding thread error: {e}")
+        
+        finally:
+            try:
+                client_socket.close()
+            except:
+                pass
+            logger.info("Exchange forwarding thread exited")
     
     def monitor_connection(self, router_id, client_socket):
         """Monitor an established connection from another router"""
@@ -416,6 +519,10 @@ class RouterAgent:
             # Get packet info
             destination = packet.get('destination')
             
+            # Check if this is an exchange_data packet and this is router10
+            if packet.get('type') == 'exchange_data' and self.router_id == 'router10':
+                return self.handle_exchange_server_packet(client_socket, packet)
+            
             # Check if this router is the destination
             if destination == self.router_id:
                 logger.info(f"Packet reached destination: {self.router_id}")
@@ -470,6 +577,111 @@ class RouterAgent:
                 client_socket.send(json.dumps(error_response).encode('utf-8'))
             except:
                 pass
+    
+    def handle_exchange_server_packet(self, client_socket, packet):
+        """Handle exchange_data packet by forwarding to exchange server"""
+        try:
+            if self.router_id != "router10":
+                logger.error("Only router10 should handle exchange server packets")
+                response = {"status": "error", "message": "Wrong router for exchange server"}
+                client_socket.send(json.dumps(response).encode('utf-8'))
+                return
+            
+            # Extract binary data
+            binary_data = bytes.fromhex(packet.get('payload', {}).get('binary_data', ''))
+            if not binary_data:
+                logger.error("No binary data in exchange packet")
+                response = {"status": "error", "message": "No binary data in exchange packet"}
+                client_socket.send(json.dumps(response).encode('utf-8'))
+                return
+            
+            # Connect to exchange server if needed
+            if not hasattr(self, 'exchange_server_socket') or self.exchange_server_socket is None:
+                try:
+                    self.exchange_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.exchange_server_socket.connect(("exchange_server", 6000))
+                    logger.info("Connected to exchange server")
+                    
+                    # Start thread for receiving exchange server responses
+                    threading.Thread(
+                        target=self.exchange_server_response_handler,
+                        daemon=True
+                    ).start()
+                except Exception as e:
+                    logger.error(f"Failed to connect to exchange server: {e}")
+                    response = {"status": "error", "message": f"Exchange server connection failed: {e}"}
+                    client_socket.send(json.dumps(response).encode('utf-8'))
+                    return
+            
+            # Forward the binary data to exchange server
+            self.exchange_server_socket.sendall(binary_data)
+            
+            # Send acknowledgment
+            response = {"status": "forwarded", "message": "Data forwarded to exchange server"}
+            client_socket.send(json.dumps(response).encode('utf-8'))
+            
+        except Exception as e:
+            logger.error(f"Error handling exchange server packet: {e}")
+            try:
+                response = {"status": "error", "message": str(e)}
+                client_socket.send(json.dumps(response).encode('utf-8'))
+            except:
+                pass
+    
+    def exchange_server_response_handler(self):
+        """Thread to handle responses from exchange server"""
+        try:
+            while self.running:
+                try:
+                    # Check if socket is still valid
+                    if not hasattr(self, 'exchange_server_socket') or self.exchange_server_socket is None:
+                        break
+                    
+                    # Receive response from exchange server
+                    response_data = self.exchange_server_socket.recv(4096)
+                    if not response_data:
+                        logger.warning("Exchange server closed connection")
+                        self.exchange_server_socket.close()
+                        self.exchange_server_socket = None
+                        break
+                    
+                    # Log the response for debugging
+                    logger.info(f"Received response from exchange server: {len(response_data)} bytes")
+                    
+                    # Find a route back to router1
+                    next_hop = self.get_next_hop("router1")
+                    if not next_hop:
+                        logger.error("No route back to router1 for exchange response")
+                        continue
+                    
+                    # Create packet to forward response back to client
+                    exchange_response_packet = {
+                        "type": "exchange_response",
+                        "source": self.router_id,
+                        "destination": "router1",
+                        "payload": {
+                            "binary_data": response_data.hex()
+                        }
+                    }
+                    
+                    # Forward the response
+                    self.forward_packet(exchange_response_packet, next_hop)
+                    
+                except socket.timeout:
+                    continue
+                except Exception as e:
+                    logger.error(f"Error handling exchange server response: {e}")
+                    break
+                    
+        except Exception as e:
+            logger.error(f"Exchange server response handler error: {e}")
+        finally:
+            if hasattr(self, 'exchange_server_socket') and self.exchange_server_socket:
+                try:
+                    self.exchange_server_socket.close()
+                except:
+                    pass
+                self.exchange_server_socket = None
     
     def get_next_hop(self, destination):
         """Determine next hop for a destination using routing table"""

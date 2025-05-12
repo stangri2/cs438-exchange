@@ -18,15 +18,14 @@
         "destination": "router1"
       },
       "action": {
-        "forward_to": "router4"
+        "forward_to": "router1"
       },
       "priority": 100,
       "path": [
         "router3",
-        "router4",
         "router1"
       ],
-      "metric": 687.0
+      "metric": 1.0
     },
     {
       "match": {
@@ -40,7 +39,22 @@
         "router3",
         "router4"
       ],
-      "metric": 216.0
+      "metric": 1.0
+    },
+    {
+      "match": {
+        "destination": "router2"
+      },
+      "action": {
+        "forward_to": "router1"
+      },
+      "priority": 100,
+      "path": [
+        "router3",
+        "router1",
+        "router2"
+      ],
+      "metric": 2.0
     },
     {
       "match": {
@@ -55,7 +69,7 @@
         "router4",
         "router5"
       ],
-      "metric": 515.0
+      "metric": 2.0
     },
     {
       "match": {
@@ -70,40 +84,23 @@
         "router4",
         "router6"
       ],
-      "metric": 877.0
-    },
-    {
-      "match": {
-        "destination": "router2"
-      },
-      "action": {
-        "forward_to": "router4"
-      },
-      "priority": 100,
-      "path": [
-        "router3",
-        "router4",
-        "router1",
-        "router2"
-      ],
-      "metric": 950.0
+      "metric": 2.0
     },
     {
       "match": {
         "destination": "router7"
       },
       "action": {
-        "forward_to": "router4"
+        "forward_to": "router1"
       },
       "priority": 100,
       "path": [
         "router3",
-        "router4",
-        "router6",
-        "router8",
+        "router1",
+        "router2",
         "router7"
       ],
-      "metric": 1125.0
+      "metric": 3.0
     },
     {
       "match": {
@@ -119,7 +116,7 @@
         "router6",
         "router8"
       ],
-      "metric": 1118.0
+      "metric": 3.0
     },
     {
       "match": {
@@ -135,7 +132,7 @@
         "router6",
         "router9"
       ],
-      "metric": 1149.0
+      "metric": 3.0
     },
     {
       "match": {
@@ -149,10 +146,10 @@
         "router3",
         "router4",
         "router6",
-        "router9",
+        "router8",
         "router10"
       ],
-      "metric": 1811.0
+      "metric": 4.0
     }
   ],
   "routes": [
