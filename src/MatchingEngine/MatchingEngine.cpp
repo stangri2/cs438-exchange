@@ -1,11 +1,15 @@
 #include "MatchingEngine.hpp"
+#include "DebugPrint.hpp"
 
+#include <iostream>
 #include <chrono>
 
 namespace ex {
 
 std::queue<Event> MatchingEngine::handle(const Command& cmd) {
     std::queue<Event> out;
+
+    std::visit([](auto&& c){ std::cout << c << '\n'; }, cmd);
 
     std::visit([&](auto&& c) {
         using T = std::decay_t<decltype(c)>;
@@ -21,8 +25,10 @@ std::queue<Event> MatchingEngine::handle(const Command& cmd) {
             ownerOf_[c.id] = c.owner;
             out.push(EvAckNew{ c.id });
 
-            for (const auto& t : trades)
+            for (const auto& t : trades) {
                 out.push(EvTrade{ t });
+                std::cout << t << "\n";
+            }
 
         } else if constexpr (std::is_same_v<T, CmdModify>) {
             if (ob_.modify(c.id, c.newQty))
